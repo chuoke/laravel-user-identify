@@ -17,17 +17,21 @@ You can install the package via composer:
 composer require chuoke/laravel-user-identify
 ```
 
+```bash
+php artisan vendor:publish --provider="Chuoke\UserIdentify\UserIdentifyServiceProvider"
+```
+
 You can publish and run the migrations with:
 
 ```bash
-php artisan vendor:publish --provider="Chuoke\UserIdentify\UserIdentifyServiceProvider" --tag="laravel-user-identify-migrations"
+php artisan vendor:publish --tag="user-identify-migrations"
 php artisan migrate
 ```
 
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --provider="Chuoke\UserIdentify\UserIdentifyServiceProvider" --tag="laravel-user-identify-config"
+php artisan vendor:publish --tag="user-identify-config"
 ```
 
 This is the contents of the published config file:

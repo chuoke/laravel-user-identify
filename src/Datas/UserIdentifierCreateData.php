@@ -1,6 +1,6 @@
 <?php
 
-namespace Chuoke\UserIdentify\DTOs;
+namespace Chuoke\UserIdentify\Datas;
 
 use Spatie\DataTransferObject\DataTransferObject;
 

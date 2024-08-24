@@ -11,15 +11,11 @@ return new class extends Migration
         Schema::create(config('user-identify.table.name'), function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger(config('user-identify.table.foreign_key'))->index();
-
-            $table->string('type', 10);
+            $table->string('type', 15);
             $table->string('identifier', 50)->unique();
             $table->string('credential', 200)->nullable();
-
-            $table->unsignedInteger('used_at')->nullable();
-
-            $table->unsignedInteger('updated_at');
-            $table->unsignedInteger('created_at');
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamps();
         });
     }
 
