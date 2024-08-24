@@ -2,10 +2,10 @@
 
 namespace Chuoke\UserIdentify\Actions;
 
-use Illuminate\Foundation\Auth\User;
-use Chuoke\UserIdentify\Models\UserIdentifier;
 use Chuoke\UserIdentify\Datas\UserIdentifierCreateData;
 use Chuoke\UserIdentify\Exceptions\UserIdentifierExistsException;
+use Chuoke\UserIdentify\Models\UserIdentifier;
+use Illuminate\Foundation\Auth\User;
 
 class UserIdentifierCreateAction
 {

@@ -2,9 +2,9 @@
 
 namespace Chuoke\UserIdentify\Tests;
 
+use Chuoke\UserIdentify\UserIdentifyServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Chuoke\UserIdentify\UserIdentifyServiceProvider;
 
 class TestCase extends Orchestra
 {

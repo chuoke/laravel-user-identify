@@ -2,11 +2,11 @@
 
 namespace Chuoke\UserIdentify;
 
-use Illuminate\Support\Str;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Hashing\Hasher as HasherContract;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Support\Str;
 
 class UserIdentifyProvider implements UserProvider
 {
@@ -76,7 +76,7 @@ class UserIdentifyProvider implements UserProvider
             ->where($model->getAuthIdentifierName(), $identifier)
             ->first();
 
-        if (!$retrievedModel) {
+        if (! $retrievedModel) {
             return;
         }
 
@@ -149,7 +149,7 @@ class UserIdentifyProvider implements UserProvider
             }
         }
 
-        if (!($userIdentify = $query->first())) {
+        if (! ($userIdentify = $query->first())) {
             return;
         }
 
@@ -186,7 +186,7 @@ class UserIdentifyProvider implements UserProvider
 
         $plain = $credentials['password'] ?? $credentials['credential'];
 
-        if (!$user->relationLoaded('identify')) {
+        if (! $user->relationLoaded('identify')) {
             return false;
         }
 
@@ -227,7 +227,7 @@ class UserIdentifyProvider implements UserProvider
     {
         $class = '\\' . ltrim($this->userModel, '\\');
 
-        return new $class;
+        return new $class();
     }
 
     /**
@@ -239,7 +239,7 @@ class UserIdentifyProvider implements UserProvider
     {
         $class = '\\' . ltrim($this->userIdentifyModel, '\\');
 
-        return new $class;
+        return new $class();
     }
 
     /**
