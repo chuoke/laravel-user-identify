@@ -2,8 +2,8 @@
 
 namespace Chuoke\UserIdentify\Actions;
 
-use Chuoke\UserIdentify\Models\UserIdentifier;
 use Chuoke\UserIdentify\Datas\UserIdentifierUpdateData;
+use Chuoke\UserIdentify\Models\UserIdentifier;
 
 class UserIdentifierUpdateAction
 {
