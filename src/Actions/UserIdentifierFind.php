@@ -19,7 +19,7 @@ class UserIdentifierFind
      */
     public function execute($type, $identifier = null, User $user = null, $credential = null)
     {
-        if (!$identifier && !$user) {
+        if (! $identifier && ! $user) {
             throw new \InvalidArgumentException('The [identifier] and [user] arguments provide at least one.');
         }
 

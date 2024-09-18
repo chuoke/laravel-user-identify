@@ -2,10 +2,10 @@
 
 namespace Chuoke\UserIdentify\Actions;
 
-use Illuminate\Foundation\Auth\User;
-use Chuoke\UserIdentify\Models\UserIdentifier;
 use Chuoke\UserIdentify\Datas\UserIdentifierCreateData;
 use Chuoke\UserIdentify\Datas\UserIdentifierUpdateData;
+use Chuoke\UserIdentify\Models\UserIdentifier;
+use Illuminate\Foundation\Auth\User;
 
 class UserIdentifierUpdateOrCreate
 {
@@ -26,7 +26,7 @@ class UserIdentifierUpdateOrCreate
         $this->user = $user;
 
         if ($identifier = $this->getExists()) {
-            (new UserIdentifierUpdate)
+            (new UserIdentifierUpdate())
                 ->execute(
                     $identifier,
                     new UserIdentifierUpdateData($data->toArray())
@@ -44,7 +44,7 @@ class UserIdentifierUpdateOrCreate
      */
     protected function getExists()
     {
-        return (new UserIdentifierFind)->execute(
+        return (new UserIdentifierFind())->execute(
             $this->data->type,
             $this->data->identifier,
             $this->user,

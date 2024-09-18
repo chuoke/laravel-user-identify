@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Chuoke\UserIdentify\Traits;
 
 trait CreateUserIdentifyModel

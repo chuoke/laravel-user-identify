@@ -2,10 +2,10 @@
 
 namespace Chuoke\UserIdentify\Actions;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Model as User;
-use Laravel\Socialite\AbstractUser;
 use Chuoke\UserIdentify\Datas\UserIdentifierCreateData;
+use Illuminate\Database\Eloquent\Model as User;
+use Illuminate\Support\Facades\DB;
+use Laravel\Socialite\AbstractUser;
 
 class UserIdentifierSaveFromSocialite
 {
@@ -16,34 +16,34 @@ class UserIdentifierSaveFromSocialite
      */
     public function execute(AbstractUser $socialiteUser)
     {
-        if (!array_key_exists('socialite_type', $socialiteUser->getRaw()) || !$socialiteUser['socialite_type']) {
+        if (! array_key_exists('socialite_type', $socialiteUser->getRaw()) || ! $socialiteUser['socialite_type']) {
             throw new \InvalidArgumentException('The [socialite_type] must be specified.');
         }
 
         return DB::transaction(function () use ($socialiteUser) {
             $socialiteType = $socialiteUser['socialite_type'];
 
-            $socialiteIdIdentifier = (new UserIdentifierFind)->execute($socialiteType, $socialiteUser->getId());
+            $socialiteIdIdentifier = (new UserIdentifierFind())->execute($socialiteType, $socialiteUser->getId());
             if ($email = $socialiteUser->getEmail()) {
-                $emailIdentifier = (new UserIdentifierFind)->execute('email', $email);
+                $emailIdentifier = (new UserIdentifierFind())->execute('email', $email);
             }
 
             $user = $socialiteIdIdentifier ? $socialiteIdIdentifier->user : null;
 
-            if ($socialiteIdIdentifier && !$emailIdentifier && !$this->isUserHasEmailIdentifier($user)) {
+            if ($socialiteIdIdentifier && ! $emailIdentifier && ! $this->isUserHasEmailIdentifier($user)) {
                 $emailIdentifier = $this->createEmailIdentifier($user, $socialiteUser->getEmail());
-            } elseif (!$socialiteIdIdentifier && $emailIdentifier) {
+            } elseif (! $socialiteIdIdentifier && $emailIdentifier) {
                 $user = $emailIdentifier->user;
                 $socialiteIdIdentifier = $this->createSocialIdentifier($user, $socialiteType, $socialiteUser);
             }
 
             $user = (new (config('user-identify.actions.user_save_from_socialite'))())->execute($user, $socialiteUser);
 
-            if (!$socialiteIdIdentifier) {
+            if (! $socialiteIdIdentifier) {
                 $socialiteIdIdentifier = $this->createSocialIdentifier($user, $socialiteType, $socialiteUser);
             }
 
-            if (!$emailIdentifier && $socialiteUser->getEmail() && !$this->isUserHasEmailIdentifier($user)) {
+            if (! $emailIdentifier && $socialiteUser->getEmail() && ! $this->isUserHasEmailIdentifier($user)) {
                 $emailIdentifier = $this->createEmailIdentifier($user, $socialiteUser->getEmail());
             }
 
@@ -55,9 +55,9 @@ class UserIdentifierSaveFromSocialite
 
     protected function isUserHasEmailIdentifier(User $user)
     {
-        $emailIdentifier = (new UserIdentifierFind)->execute('email', null, $user);
+        $emailIdentifier = (new UserIdentifierFind())->execute('email', null, $user);
 
-        return !!$emailIdentifier;
+        return ! ! $emailIdentifier;
     }
 
     protected function createEmailIdentifier(User $user, $email)

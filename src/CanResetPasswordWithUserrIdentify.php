@@ -14,7 +14,7 @@ trait CanResetPasswordWithUserrIdentify
      */
     public function getEmailForPasswordReset()
     {
-        $emailIdentifier = (new UserIdentifierFind)
+        $emailIdentifier = (new UserIdentifierFind())
             ->execute('email', null, $this);
 
         return $emailIdentifier ? $emailIdentifier->identifier : '';

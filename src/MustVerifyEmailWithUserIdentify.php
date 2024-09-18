@@ -2,9 +2,9 @@
 
 namespace Chuoke\UserIdentify;
 
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Chuoke\UserIdentify\Actions\UserIdentifierFind;
 use Chuoke\UserIdentify\Actions\UserIdentifierVerifiedMark;
+use Illuminate\Auth\Notifications\VerifyEmail;
 
 trait MustVerifyEmailWithUserIdentify
 {
@@ -30,7 +30,7 @@ trait MustVerifyEmailWithUserIdentify
         $emailIdentifier = $this->getEmailIdentifier();
 
         if ($emailIdentifier) {
-            return (new UserIdentifierVerifiedMark)->execute($emailIdentifier);
+            return (new UserIdentifierVerifiedMark())->execute($emailIdentifier);
         }
 
         return false;
@@ -43,7 +43,7 @@ trait MustVerifyEmailWithUserIdentify
      */
     public function sendEmailVerificationNotification()
     {
-        $this->notify(new VerifyEmail);
+        $this->notify(new VerifyEmail());
     }
 
     /**
@@ -59,16 +59,16 @@ trait MustVerifyEmailWithUserIdentify
     }
 
     /**
-     * @param  boolean  $new
+     * @param  bool  $new
      * @return Models\UserIdentifier|null
      */
     public function getEmailIdentifier($new = false)
     {
         $name = $this->getEmailIdentifierRelationName();
-        if ($new || !$this->relationLoaded($name)) {
+        if ($new || ! $this->relationLoaded($name)) {
             $this->setRelation(
                 $name,
-                (new UserIdentifierFind)->execute('email', null, $this)
+                (new UserIdentifierFind())->execute('email', null, $this)
             );
         }
 

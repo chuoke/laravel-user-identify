@@ -2,16 +2,16 @@
 
 namespace Chuoke\UserIdentify;
 
+use Chuoke\UserIdentify\Actions\UserIdentifierCreate;
+use Chuoke\UserIdentify\Actions\UserIdentifierPasswordUpdate;
+use Chuoke\UserIdentify\Actions\UserIdentifierSaveFromSocialite;
+use Chuoke\UserIdentify\Actions\UserIdentifierUsedTouch;
+use Chuoke\UserIdentify\Datas\UserIdentifierCreateData;
 use Closure;
 use Illuminate\Auth\EloquentUserProvider;
-use Illuminate\Contracts\Support\Arrayable;
-use Chuoke\UserIdentify\Actions\UserIdentifierCreate;
-use Chuoke\UserIdentify\Datas\UserIdentifierCreateData;
-use Chuoke\UserIdentify\Actions\UserIdentifierUsedTouch;
-use Illuminate\Contracts\Hashing\Hasher as HasherContract;
-use Chuoke\UserIdentify\Actions\UserIdentifierPasswordUpdate;
 use Illuminate\Contracts\Auth\Authenticatable as UserContract;
-use Chuoke\UserIdentify\Actions\UserIdentifierSaveFromSocialite;
+use Illuminate\Contracts\Hashing\Hasher as HasherContract;
+use Illuminate\Contracts\Support\Arrayable;
 
 class UserIdentifyProvider extends EloquentUserProvider
 {
@@ -133,7 +133,7 @@ class UserIdentifyProvider extends EloquentUserProvider
         } else {
             $conditions = array_filter(
                 $credentials,
-                fn($key) => in_array($key, ['type', 'identifier']),
+                fn ($key) => in_array($key, ['type', 'identifier']),
                 ARRAY_FILTER_USE_KEY
             );
         }
@@ -145,28 +145,28 @@ class UserIdentifyProvider extends EloquentUserProvider
         if ($conditions['identifier'] instanceof \Laravel\Socialite\AbstractUser) {
             $userIdentifier = $this->retrieveUserIdentifier([
                 'type' => $conditions['identifier']['socialite_type'],
-                'identifier' => $conditions['identifier']->getId()
+                'identifier' => $conditions['identifier']->getId(),
             ]);
 
-            if (!$userIdentifier && ($email = $conditions['identifier']->getEmail())) {
+            if (! $userIdentifier && ($email = $conditions['identifier']->getEmail())) {
                 $userIdentifier = $this->retrieveUserIdentifier([
                     'type' => 'email',
-                    'identifier' => $email
+                    'identifier' => $email,
                 ]);
             }
 
-            $userIdentifier = (new UserIdentifierSaveFromSocialite)->execute($conditions['identifier']);
-            if (!$userIdentifier) {
+            $userIdentifier = (new UserIdentifierSaveFromSocialite())->execute($conditions['identifier']);
+            if (! $userIdentifier) {
             }
         } else {
             $userIdentifier = $this->retrieveUserIdentifier($conditions);
         }
 
-        if (!$userIdentifier) {
+        if (! $userIdentifier) {
             return null;
         }
 
-        (new UserIdentifierUsedTouch)->execute($userIdentifier);
+        (new UserIdentifierUsedTouch())->execute($userIdentifier);
 
         $user = $userIdentifier->user;
 
@@ -182,8 +182,8 @@ class UserIdentifyProvider extends EloquentUserProvider
     protected function retrieveUserIdentifier(array $conditions)
     {
         if (
-            !array_key_exists('type', $conditions) || !$conditions['type']
-            || !array_key_exists('identifier', $conditions) || !$conditions['identifier']
+            ! array_key_exists('type', $conditions) || ! $conditions['type']
+            || ! array_key_exists('identifier', $conditions) || ! $conditions['identifier']
         ) {
             // throw new \InvalidArgumentException('The "type" property must be specified.');
             return;
@@ -231,7 +231,7 @@ class UserIdentifyProvider extends EloquentUserProvider
         $result = $user->user_identifier->check($plain, $this->hasher);
 
         if ($result) {
-            (new UserIdentifierUsedTouch)->execute($user->user_identifier);
+            (new UserIdentifierUsedTouch())->execute($user->user_identifier);
         }
 
         return $result;
@@ -264,7 +264,7 @@ class UserIdentifyProvider extends EloquentUserProvider
 
     protected function updatePassword(UserContract $user, array $credentials)
     {
-        (new UserIdentifierPasswordUpdate)
+        (new UserIdentifierPasswordUpdate())
             ->execute(
                 $user,
                 $this->hasher->make($credentials['password'])

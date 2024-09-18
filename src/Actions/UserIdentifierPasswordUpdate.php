@@ -2,12 +2,11 @@
 
 namespace Chuoke\UserIdentify\Actions;
 
-use Illuminate\Foundation\Auth\User;
 use Chuoke\UserIdentify\AuthenticatableWithUserIdentify;
+use Illuminate\Foundation\Auth\User;
 
 class UserIdentifierPasswordUpdate
 {
-
     public function execute(User $user, $hashedPassword)
     {
         /** @var AuthenticatableWithUserIdentify $user */

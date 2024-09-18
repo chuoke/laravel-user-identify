@@ -98,7 +98,8 @@ trait AuthenticatableWithUserIdentify
 
     public function hasPasswordAttr()
     {
-        return !empty($this->getAuthPasswordName()) && $this->hasAttribute($this->getAuthPasswordName());;
+        return ! empty($this->getAuthPasswordName()) && $this->hasAttribute($this->getAuthPasswordName());
+        ;
     }
 
     /**
@@ -142,7 +143,7 @@ trait AuthenticatableWithUserIdentify
 
     public function hasRememberTokenAttr()
     {
-        return !empty($this->getRememberTokenName()) && $this->hasAttribute($this->getRememberTokenName());
+        return ! empty($this->getRememberTokenName()) && $this->hasAttribute($this->getRememberTokenName());
     }
 
     public static function isRememberTokenStillInUser()
@@ -151,15 +152,15 @@ trait AuthenticatableWithUserIdentify
     }
 
     /**
-     * @param  boolean  $new
+     * @param  bool  $new
      * @return Models\UserIdentifier|null
      */
     public function getRememberTokenIdentifier($new = false)
     {
         $relationName = $this->getRememberTokenIdentifierRelationName();
 
-        if ($new || !$this->relationLoaded($relationName)) {
-            $identifier = (new UserIdentifierFind)
+        if ($new || ! $this->relationLoaded($relationName)) {
+            $identifier = (new UserIdentifierFind())
                 ->execute($this->getRememberTokenIdentifierTypeName(), $this->getKey(), $this);
 
             $this->setRelation($relationName, $identifier);

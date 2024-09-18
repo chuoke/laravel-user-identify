@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $identifier
  * @property string $credential
  * @property string $credential
- * @property boolean $passwordable
+ * @property bool $passwordable
  * @property \Illuminate\Support\Carbon|null $last_used_at
  * @property \Illuminate\Support\Carbon|null $verified_at
  *
@@ -60,6 +60,6 @@ class UserIdentifier extends Model
             return $hasher->check($plain, $this->credential);
         }
 
-        return !$this->passwordable;
+        return ! $this->passwordable;
     }
 }

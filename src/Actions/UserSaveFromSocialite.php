@@ -2,8 +2,8 @@
 
 namespace Chuoke\UserIdentify\Actions;
 
-use Laravel\Socialite\AbstractUser;
 use Illuminate\Database\Eloquent\Model as User;
+use Laravel\Socialite\AbstractUser;
 
 class UserSaveFromSocialite
 {

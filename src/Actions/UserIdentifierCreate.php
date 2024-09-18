@@ -21,7 +21,7 @@ class UserIdentifierCreate
     /**
      * @param  \Illuminate\Foundation\Auth\User  $user
      * @param  \Chuoke\UserIdentify\Datas\UserIdentifierCreateData  $data
-     * @param  boolean  $checkExist
+     * @param  bool  $checkExist
      * @return UserIdentifier
      */
     public function execute(User $user, UserIdentifierCreateData $data, $checkExist = true)
@@ -43,11 +43,11 @@ class UserIdentifierCreate
 
     protected function buildCreateData(): array
     {
-        if (!$this->data->type) {
+        if (! $this->data->type) {
             throw new \InvalidArgumentException('The type must be specified.');
         }
 
-        if ($this->data->passwordable && !$this->data->credential) {
+        if ($this->data->passwordable && ! $this->data->credential) {
             $this->data->credential = $this->user->getAuthPassword();
         }
 
@@ -74,7 +74,7 @@ class UserIdentifierCreate
      */
     protected function getExists()
     {
-        return (new UserIdentifierFind)->execute(
+        return (new UserIdentifierFind())->execute(
             $this->data->type,
             $this->data->identifier,
             $this->user,
