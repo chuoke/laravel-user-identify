@@ -6,8 +6,8 @@ use RuntimeException;
 
 class UserIdentifierExistsException extends RuntimeException
 {
-    public function __construct($message = null)
+    public function __construct($type, $message = null)
     {
-        parent::__construct(is_null($message) ? __("The user identifier already exists.") : $message);
+        parent::__construct(is_null($message) ? __("The user [{$type}] identifier already exists.") : $message);
     }
 }

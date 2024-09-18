@@ -2,21 +2,19 @@
 
 namespace Chuoke\UserIdentify;
 
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Contracts\Hashing\Hasher as HasherContract;
+use Closure;
+use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Support\Str;
+use Chuoke\UserIdentify\Actions\UserIdentifierCreate;
+use Chuoke\UserIdentify\Datas\UserIdentifierCreateData;
+use Chuoke\UserIdentify\Actions\UserIdentifierUsedTouch;
+use Illuminate\Contracts\Hashing\Hasher as HasherContract;
+use Chuoke\UserIdentify\Actions\UserIdentifierPasswordUpdate;
+use Illuminate\Contracts\Auth\Authenticatable as UserContract;
+use Chuoke\UserIdentify\Actions\UserIdentifierSaveFromSocialite;
 
-class UserIdentifyProvider implements UserProvider
+class UserIdentifyProvider extends EloquentUserProvider
 {
-    /**
-     * The hasher implementation.
-     *
-     * @var \Illuminate\Contracts\Hashing\Hasher
-     */
-    protected $hasher;
-
     /**
      * The Eloquent user auth model.
      *
@@ -25,40 +23,29 @@ class UserIdentifyProvider implements UserProvider
     protected $userIdentifyModel;
 
     /**
-     * The Eloquent user model.
-     *
-     * @var string
-     */
-    protected $userModel;
-
-    /**
      * Create a new database user provider.
      *
      * @param  \Illuminate\Contracts\Hashing\Hasher  $hasher
-     * @param  string  $userIdentifyModel
      * @param  string  $userModel
+     * @param  string  $userIdentifyModel
      * @return void
      */
-    public function __construct(HasherContract $hasher, $userIdentifyModel, $userModel)
+    public function __construct(HasherContract $hasher, $userModel, $userIdentifyModel)
     {
+        parent::__construct($hasher, $userModel);
+
         $this->userIdentifyModel = $userIdentifyModel;
-        $this->hasher = $hasher;
-        $this->userModel = $userModel;
     }
 
     /**
      * Retrieve a user by their unique identifier.
      *
      * @param  mixed  $identifier
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
+     * @return \Illuminate\Contracts\Auth\Authenticatable&AuthenticatableWithUserIdentify|null
      */
     public function retrieveById($identifier)
     {
-        $model = $this->createUserModel();
-
-        return $this->newModelQuery($model)
-            ->where($model->getAuthIdentifierName(), $identifier)
-            ->first();
+        return parent::retrieveById($identifier);
     }
 
     /**
@@ -70,17 +57,19 @@ class UserIdentifyProvider implements UserProvider
      */
     public function retrieveByToken($identifier, $token)
     {
-        $model = $this->createUserModel();
-
-        $retrievedModel = $this->newModelQuery($model)
-            ->where($model->getAuthIdentifierName(), $identifier)
-            ->first();
+        $retrievedModel = $this->retrieveById($identifier);
 
         if (! $retrievedModel) {
             return;
         }
 
-        $rememberToken = $retrievedModel->getRememberToken();
+        if ($retrievedModel->isRememberTokenStillInUser()) {
+            $rememberToken = $retrievedModel->getRememberToken();
+        } else {
+            $rememberTokenIdentifier = $retrievedModel->getRememberTokenIdentifier();
+
+            $rememberToken = $rememberTokenIdentifier ? $rememberTokenIdentifier->credential : null;
+        }
 
         return $rememberToken && hash_equals($rememberToken, $token)
             ? $retrievedModel : null;
@@ -93,19 +82,34 @@ class UserIdentifyProvider implements UserProvider
      * @param  string  $token
      * @return void
      */
-    public function updateRememberToken(Authenticatable $user, $token)
+    public function updateRememberToken(UserContract $user, $token)
     {
         /** @var \Illuminate\Foundation\Auth\User $user */
 
-        $user->setRememberToken($token);
+        if ($user->isRememberTokenStillInUser()) {
+            parent::updateRememberToken($user, $token);
 
-        $timestamps = $user->timestamps;
+            return;
+        }
 
-        $user->timestamps = false;
+        $rememberTokenIdentifier = $user->getRememberTokenIdentifier();
 
-        $user->save();
+        if ($rememberTokenIdentifier) {
+            $rememberTokenIdentifier->credential = $token;
+            $rememberTokenIdentifier->save();
+        } else {
+            $rememberTokenIdentifier = (new UserIdentifierCreate())
+                ->execute(
+                    $user,
+                    new UserIdentifierCreateData([
+                        'type' => $user->getRememberTokenIdentifierTypeName(),
+                        'identifier' => $user->getKey(),
+                        'credential' => $token,
+                    ])
+                );
+        }
 
-        $user->timestamps = $timestamps;
+        $user->setRelation($user->getRememberTokenIdentifierRelationName(), $rememberTokenIdentifier);
     }
 
     /**
@@ -116,83 +120,155 @@ class UserIdentifyProvider implements UserProvider
      */
     public function retrieveByCredentials(array $credentials)
     {
-        // Compatible with default of Laravel
-        $credentialKeys = ['password', 'credential'];
-
         if (
-            empty($credentials) ||
-            (count($credentials) === 1 &&
-                Str::contains($this->firstCredentialKey($credentials), $credentialKeys))
+            $this->createUserModel()->isPasswordStillInUser()
+            && ($user = parent::retrieveByCredentials($credentials))
         ) {
+            return $user;
+        }
+
+        if (array_key_exists('email', $credentials)) {
+            $conditions['type'] = 'email';
+            $conditions['identifier'] = $credentials['email'];
+        } else {
+            $conditions = array_filter(
+                $credentials,
+                fn($key) => in_array($key, ['type', 'identifier']),
+                ARRAY_FILTER_USE_KEY
+            );
+        }
+
+        if (empty($conditions)) {
+            return;
+        }
+
+        if ($conditions['identifier'] instanceof \Laravel\Socialite\AbstractUser) {
+            $userIdentifier = $this->retrieveUserIdentifier([
+                'type' => $conditions['identifier']['socialite_type'],
+                'identifier' => $conditions['identifier']->getId()
+            ]);
+
+            if (!$userIdentifier && ($email = $conditions['identifier']->getEmail())) {
+                $userIdentifier = $this->retrieveUserIdentifier([
+                    'type' => 'email',
+                    'identifier' => $email
+                ]);
+            }
+
+            $userIdentifier = (new UserIdentifierSaveFromSocialite)->execute($conditions['identifier']);
+            if (!$userIdentifier) {
+            }
+        } else {
+            $userIdentifier = $this->retrieveUserIdentifier($conditions);
+        }
+
+        if (!$userIdentifier) {
+            return null;
+        }
+
+        (new UserIdentifierUsedTouch)->execute($userIdentifier);
+
+        $user = $userIdentifier->user;
+
+        $user->setRelation('user_identifier', $userIdentifier->withoutRelations());
+
+        return $user;
+    }
+
+    /**
+     * @param  array  $conditions
+     * @return Models\UserIdentifier|null
+     */
+    protected function retrieveUserIdentifier(array $conditions)
+    {
+        if (
+            !array_key_exists('type', $conditions) || !$conditions['type']
+            || !array_key_exists('identifier', $conditions) || !$conditions['identifier']
+        ) {
+            // throw new \InvalidArgumentException('The "type" property must be specified.');
             return;
         }
 
         // First we will add each credential element to the query as a where clause.
         // Then we can execute the query and, if we found a user, return it in a
         // Eloquent User "model" that will be utilized by the Guard instances.
-        $query = $this->newModelQuery($this->createUserIdentifyModel());
+        $query = $this->newUserIdentifyModelQuery();
 
-        foreach ($credentials as $key => $value) {
-            if (Str::contains($key, ['password', 'credential'])) {
-                continue;
-            }
-
-            // Compatible with default of Laravel
-            if (strcasecmp($key, 'email') === 0) {
-                $key = 'identifier';
-            }
-
+        foreach ($conditions as $key => $value) {
             if (is_array($value) || $value instanceof Arrayable) {
                 $query->whereIn($key, $value);
+            } elseif ($value instanceof Closure) {
+                $value($query);
             } else {
                 $query->where($key, $value);
             }
         }
 
-        if (! ($userIdentify = $query->first())) {
-            return;
-        }
-
-        if ($user = $userIdentify->user()->first()) {
-            $user->setRelation('identify', $userIdentify);
-        }
-
-        return $user;
-    }
-
-    /**
-     * Get the first key from the credential array.
-     *
-     * @param  array  $credentials
-     * @return string|null
-     */
-    protected function firstCredentialKey(array $credentials)
-    {
-        foreach ($credentials as $key => $value) {
-            return $key;
-        }
+        return $query->first();
     }
 
     /**
      * Validate a user against the given credentials.
      *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
+     * @param  \Illuminate\Contracts\Auth\Authenticatable&AuthenticatableWithUserIdentify  $user
      * @param  array  $credentials
      * @return bool
      */
-    public function validateCredentials(Authenticatable $user, array $credentials)
+    public function validateCredentials(UserContract $user, array $credentials)
     {
+        if ($user->isPasswordStillInUser()) {
+            return parent::validateCredentials($user, $credentials);
+        }
+
         /** @var \Illuminate\Foundation\Auth\User $user */
 
-        $plain = $credentials['password'] ?? $credentials['credential'];
+        $plain = $credentials['password'] ?? $credentials['credential'] ?? null;
 
-        if (! $user->relationLoaded('identify')) {
+        if (! $user->relationLoaded('user_identifier')) {
             return false;
         }
 
-        return $user->identify->check($plain, $this->hasher);
+        $result = $user->user_identifier->check($plain, $this->hasher);
 
-        // return $this->hasher->check($plain, $user->auth->getAuthPassword());
+        if ($result) {
+            (new UserIdentifierUsedTouch)->execute($user->user_identifier);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Rehash the user's password if required and supported.
+     *
+     * @param  \Illuminate\Contracts\Auth\Authenticatable&AuthenticatableWithUserIdentify  $user
+     * @param  array  $credentials
+     * @param  bool  $force
+     * @return void
+     */
+    public function rehashPasswordIfRequired(UserContract $user, #[\SensitiveParameter] array $credentials, bool $force = false)
+    {
+        if ($user->isPasswordStillInUser()) {
+            parent::rehashPasswordIfRequired($user, $credentials, $force);
+        }
+
+        if (! $this->hasher->needsRehash($user->getAuthPassword()) && ! $force) {
+            return;
+        }
+
+        if (! array_key_exists('password', $credentials)) {
+            return;
+        }
+
+        $this->updatePassword($user, $credentials);
+    }
+
+    protected function updatePassword(UserContract $user, array $credentials)
+    {
+        (new UserIdentifierPasswordUpdate)
+            ->execute(
+                $user,
+                $this->hasher->make($credentials['password'])
+            );
     }
 
     /**
@@ -225,9 +301,22 @@ class UserIdentifyProvider implements UserProvider
      */
     public function createUserModel()
     {
-        $class = '\\' . ltrim($this->userModel, '\\');
+        $class = '\\' . ltrim($this->model, '\\');
 
         return new $class();
+    }
+
+    /**
+     * Get a new query builder for the model instance.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model|null  $model
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected function newUserIdentifyModelQuery($model = null)
+    {
+        return is_null($model)
+            ? $this->createUserIdentifyModel()->newQuery()
+            : $model->newQuery();
     }
 
     /**
@@ -272,7 +361,7 @@ class UserIdentifyProvider implements UserProvider
      */
     public function getModel()
     {
-        return $this->userModel;
+        return $this->model;
     }
 
     /**
@@ -283,7 +372,30 @@ class UserIdentifyProvider implements UserProvider
      */
     public function setModel($model)
     {
-        $this->userModel = $model;
+        $this->model = $model;
+
+        return $this;
+    }
+
+    /**
+     * Gets the name of the user identify model.
+     *
+     * @return string
+     */
+    public function getUserIdentifyModel()
+    {
+        return $this->userIdentifyModel;
+    }
+
+    /**
+     * Sets the name of the user identify model.
+     *
+     * @param  string  $model
+     * @return $this
+     */
+    public function setUserIdentifyModel($model)
+    {
+        $this->userIdentifyModel = $model;
 
         return $this;
     }

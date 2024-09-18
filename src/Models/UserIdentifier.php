@@ -2,31 +2,48 @@
 
 namespace Chuoke\UserIdentify\Models;
 
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
 
-class UserIdentifier extends Model implements AuthenticatableContract
+/**
+ * @property string $type
+ * @property string $identifier
+ * @property string $credential
+ * @property string $credential
+ * @property boolean $passwordable
+ * @property \Illuminate\Support\Carbon|null $last_used_at
+ * @property \Illuminate\Support\Carbon|null $verified_at
+ *
+ * @property \Illuminate\Database\Eloquent\Model|null $user
+ */
+class UserIdentifier extends Model
 {
-    use Authenticatable;
-
     protected $table = 'user_identifiers';
 
     protected $guarded = [];
 
-    protected $casts = [
-        'used_at' => 'datetime',
-    ];
+    protected function casts()
+    {
+        return [
+            'last_used_at' => 'datetime',
+            'verified_at' => 'datetime',
+            'passwordable' => 'boolean',
+        ];
+    }
+
+    public static function associateUserKey()
+    {
+        return config('user-identify.idetifier_user_key');
+    }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relation\BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function user()
     {
         return $this->belongsTo(
             \config('user-identify.user_model'),
-            \config('user-identify.table.foreign_key'),
-            \config('user-identify.table.owner_key')
+            static::associateUserKey(),
+            \config('user-identify.user_key')
         );
     }
 
@@ -39,13 +56,10 @@ class UserIdentifier extends Model implements AuthenticatableContract
      */
     public function check($plain, $hasher = null)
     {
-        switch ($this->type) {
-            case 'username':
-            case 'email':
-            case 'mobile':
-                return $hasher->check($plain, $this->credential);
+        if ($this->passwordable && $plain) {
+            return $hasher->check($plain, $this->credential);
         }
 
-        return false;
+        return !$this->passwordable;
     }
 }

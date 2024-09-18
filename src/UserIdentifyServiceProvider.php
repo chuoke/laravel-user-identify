@@ -17,17 +17,17 @@ class UserIdentifyServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('laravel-user-identify')
-            ->hasConfigFile()
+            ->hasConfigFile('user-identify')
             ->hasMigration('create_user_identifiers_table');
     }
 
     public function packageBooted()
     {
-        // Auth::provider($this->app['config']['identify']['auth_provider_name'], function ($app, array $config) {
+        // Auth::provider($config('user-identify.auth_provider_name') ?: 'user-identify', function ($app) {
         //     return new UserIdentifyProvider(
         //         $app['hash'],
-        //         $config['model'],
-        //         $app['config']['identify']['user_model']
+        //         config('user-identify.user_model'),
+        //         config('user-identify.idetifier_model'),
         //     );
         // });
     }

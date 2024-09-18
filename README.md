@@ -71,7 +71,7 @@ return [
             'model' => App\Models\User::class,
         ],
         'user_identify' => [
-            'driver' => 'user_identify',
+            'driver' => $config('user-identify.auth_provider_name', 'user_identify'),
             'model' => Chuoke\UserIdentify\Models\UserIdentify::class, // user identify model
         ],
     ],
@@ -79,11 +79,11 @@ return [
 ];
 
 // AuthServiceProvider.php
-Auth::provider($this->app['config']['identify']['auth_provider_name'] /* or 'user_identify' */, function ($app, array $config) {
+Auth::provider($config('user-identify.auth_provider_name', 'user_identify'), function ($app) {
     return new UserIdentifyProvider(
         $app['hash'],
-        $config['model'],
-        $app['config']['identify']['user_model']
+        config('user-identify.user_model'),
+        config('user-identify.idetifier_model'),
     );
 });
 

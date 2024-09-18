@@ -1,12 +1,12 @@
 {
     "name": "chuoke/laravel-user-identify",
-    "description": "Laravel multi auth providers.",
+    "description": "Laravel multi identifier auth provider to thin user model/table.",
     "keywords": [
-        "chuoke",
         "laravel",
-        "laravel user identify",
-        "laravel user auth provider",
-        "laravel multi auth providers"
+        "multi identifier",
+        "thin user model",
+        "thin user table",
+        "auth provider"
     ],
     "homepage": "https://github.com/chuoke/laravel-user-identify",
     "license": "MIT",

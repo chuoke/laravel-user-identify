@@ -4,7 +4,7 @@ namespace Chuoke\UserIdentify\Actions;
 
 use Chuoke\UserIdentify\Models\UserIdentifier;
 
-class UserIdentifierDeleteAction
+class UserIdentifierDelete
 {
     /** @var UserIdentifier */
     protected $userIdentifier;
