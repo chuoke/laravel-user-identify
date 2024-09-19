@@ -9,7 +9,7 @@
 
 ## Why this?
 
-> In-depth learning and understanding about laravel by transforming its features.
+> In-depth learning and understanding about Laravel by transforming its features.
 
 Nowadays, there are many ways to log in, especially social login has become very popular. Usually we would add login identifiers to the `users` table, and while this is makes the use of this identification information and access to Laravel's existing logic simple. But this makes the `users` table very bloated, and these login identifiers are usually of little use in business logic. In order to simplify the `users` table and More convenient way to add login ways. I created this package.
 
